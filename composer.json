@@ -1,7 +1,7 @@
 {
     "name": "benjdiasaad/laravel-db-monitor",
     "description": "Real-time database health monitoring for Laravel: slow queries, N+1 detection, and missing index suggestions.",
-    "keywords": ["laravel", "database", "monitoring", "n+1", "slow-query", "performance"],
+    "keywords": ["laravel", "database", "monitoring", "query", "slow-query", "performance"],
     "license": "MIT",
     "type": "library",
     "require": {
