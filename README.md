@@ -1,7 +1,7 @@
 # Laravel DB Monitor
 
 **Real-time database health monitoring for Laravel.**
-Automatically detects slow queries, N+1 problems, and missing indexes — stores findings in your database and alerts you via email or Slack.
+Automatically detects slow queries, N+1 problems, and missing indexes — stores findings in your database, suggests fixes, and alerts you via email or Slack.
 
 ![Laravel](https://img.shields.io/badge/Laravel-10%20%7C%2011%20%7C%2012-red?style=flat-square&logo=laravel)
 ![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue?style=flat-square&logo=php)
@@ -16,12 +16,14 @@ Automatically detects slow queries, N+1 problems, and missing indexes — stores
 | 🐢 Slow queries | Flags any query exceeding your threshold (default: 500ms) |
 | 🔁 N+1 queries | Detects when the same query pattern runs 10+ times per request |
 | 📭 Missing indexes | Suggests which columns need indexes based on real query patterns |
+| 💡 Fix suggestions | Shows exactly how to fix every detected issue |
+| 🔧 Auto-fix | Generates migration files for missing indexes automatically |
 | 📬 Alerts | Sends email or Slack notifications for critical findings |
 | 📋 Reports | Clean CLI report via `php artisan db:report` |
 
 ---
 
-## Installation
+## 📦 Installation
 
 ```bash
 composer require benjdiasaad/laravel-db-monitor
@@ -37,7 +39,7 @@ php artisan migrate
 
 ---
 
-## Register the Middleware
+## ⚙️ Register the Middleware
 
 ### Laravel 11 / 12 — `bootstrap/app.php`
 
@@ -62,7 +64,7 @@ protected $middlewareGroups = [
 
 ---
 
-## Configuration
+## 🔧 Configuration
 
 Add these to your `.env` file:
 
@@ -113,9 +115,9 @@ return [
 
 ---
 
-## Usage
+## 🚀 Usage
 
-### View a health report
+### View a health report with fix suggestions
 
 ```bash
 php artisan db:report
@@ -127,15 +129,20 @@ php artisan db:report
   ▶ SLOW QUERY
     ●  Slow query detected: 2300ms (threshold: 500ms)
        Path: api/orders
-    ●  Slow query detected: 890ms (threshold: 500ms)
-       Path: admin/reports
+       💡 Use select() to avoid SELECT *: Order::select('id', 'total', ...)
+       💡 Add an index on the WHERE column:
+       💡 php artisan db:fix --table=orders --column=user_id
 
   ▶ N+1 QUERY
     ●  Potential N+1 detected: same query ran 47 times (total: 235ms)
        Path: products/list
+       💡 Add eager loading → Model::with('user')->get()
 
   ▶ MISSING INDEX
     ●  Possible missing index on `orders`.`user_id` — used in 230 queries
+       💡 Auto-generate the migration:
+       💡 php artisan db:fix --table=orders --column=user_id
+       💡 Then run: php artisan migrate
 
  Type           | Warning | Critical | Total
 ----------------|---------|----------|------
@@ -157,6 +164,25 @@ php artisan db:report --severity=critical
 php artisan db:report --type=n_plus_one
 ```
 
+### Auto-fix missing indexes
+
+Generate a migration for a specific missing index:
+
+```bash
+php artisan db:fix --table=orders --column=user_id
+# ✅ Migration created: 2026_02_27_000000_add_index_user_id_to_orders_table.php
+# Run: php artisan migrate
+```
+
+Fix all missing index findings at once:
+
+```bash
+php artisan db:fix --all
+# ✅ Migration created: ...add_index_user_id_to_orders_table.php
+# ✅ Migration created: ...add_index_category_id_to_products_table.php
+# Run: php artisan migrate
+```
+
 ### Analyze stored logs
 
 ```bash
@@ -175,7 +201,7 @@ php artisan db:clear --all
 
 ---
 
-## Notifications
+## 📬 Notifications
 
 Set `DB_MONITOR_NOTIFY` in your `.env` to receive **email alerts** whenever a critical issue is detected (a query 5x over your threshold, or N+1 with 30+ repetitions).
 
@@ -202,7 +228,7 @@ And configure your Slack webhook in `config/services.php`:
 
 ---
 
-## Facade
+## 🧰 Facade
 
 You can also use the package directly via the facade:
 
@@ -218,7 +244,23 @@ $findings = DbMonitor::analyzeStoredLogs(hours: 48);
 
 ---
 
-## Database Tables
+## 🛠️ All Artisan Commands
+
+| Command | Description |
+|---|---|
+| `php artisan db:report` | Show health report with fix suggestions |
+| `php artisan db:report --hours=48` | Report for the last 48 hours |
+| `php artisan db:report --severity=critical` | Only critical findings |
+| `php artisan db:report --type=n_plus_one` | Only N+1 findings |
+| `php artisan db:analyze` | Analyze stored logs and write new findings |
+| `php artisan db:fix --table=x --column=y` | Generate migration for a missing index |
+| `php artisan db:fix --all` | Generate migrations for all missing indexes |
+| `php artisan db:clear --days=7` | Delete logs older than 7 days |
+| `php artisan db:clear --all` | Delete all logs and findings |
+
+---
+
+## 🗄️ Database Tables
 
 The package creates two tables:
 
@@ -246,7 +288,7 @@ The package creates two tables:
 
 ---
 
-## Auto-pruning
+## 🧹 Auto-pruning
 
 Both tables use Laravel's `Prunable` trait. Logs older than `retention_days` (default: 7) are automatically deleted when you run:
 
@@ -276,7 +318,7 @@ MIT — free to use in personal and commercial projects.
 
 ---
 
-## Author
+## 👤 Author
 
 **Benjdia Saad** — [github.com/benjdiasaad](https://github.com/benjdiasaad)
 
