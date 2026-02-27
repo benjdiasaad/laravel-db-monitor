@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use BenjdiaSaad\DbMonitor\Commands\DbAnalyzeCommand;
 use BenjdiaSaad\DbMonitor\Commands\DbClearCommand;
 use BenjdiaSaad\DbMonitor\Commands\DbReportCommand;
+use BenjdiaSaad\DbMonitor\Commands\DbFixCommand;
 
 class DbMonitorServiceProvider extends ServiceProvider
 {
@@ -33,7 +34,7 @@ class DbMonitorServiceProvider extends ServiceProvider
                 __DIR__ . '/../database/migrations' => database_path('migrations'),
             ], 'db-monitor-migrations');
 
-            $this->commands([DbReportCommand::class, DbAnalyzeCommand::class, DbClearCommand::class]);
+            $this->commands([DbReportCommand::class, DbAnalyzeCommand::class, DbClearCommand::class, DbFixCommand::class]);
         }
 
         if (! config('db-monitor.enabled', true)) {
@@ -41,7 +42,7 @@ class DbMonitorServiceProvider extends ServiceProvider
         }
 
         $recorder = $this->app->make(QueryRecorder::class);
-        
+
         Event::listen(QueryExecuted::class, fn (QueryExecuted $e) => $recorder->record($e));
 
         $this->app['router']->aliasMiddleware('db.monitor', Http\Middleware\MonitorQueries::class);

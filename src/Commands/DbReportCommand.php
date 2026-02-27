@@ -4,6 +4,7 @@ namespace BenjdiaSaad\DbMonitor\Commands;
 
 use Illuminate\Console\Command;
 use BenjdiaSaad\DbMonitor\Models\DbFinding;
+use BenjdiaSaad\DbMonitor\Suggestions\SuggestionGenerator;
 
 class DbReportCommand extends Command
 {
@@ -16,19 +17,18 @@ class DbReportCommand extends Command
 
     public function handle(): int
     {
-        $hours = (int) $this->option('hours');
-
-        $type = $this->option('type');
-        
+        $hours    = (int) $this->option('hours');
+        $type     = $this->option('type');
         $severity = $this->option('severity');
 
         $query = DbFinding::where('created_at', '>=', now()->subHours($hours));
 
-        if ($type) $query->where('type', $type);
-        
+        if ($type)     $query->where('type', $type);
         if ($severity) $query->where('severity', $severity);
 
-        $findings = $query->orderBy('severity', 'desc')->orderBy('created_at', 'desc')->get();
+        $findings = $query->orderBy('severity', 'desc')
+                          ->orderBy('created_at', 'desc')
+                          ->get();
 
         if ($findings->isEmpty()) {
             $this->info("No issues found in the last {$hours} hours.");
@@ -39,24 +39,11 @@ class DbReportCommand extends Command
         $this->line("  <fg=white;bg=blue> DB Monitor Report — Last {$hours} hours </>");
         $this->newLine();
 
-        foreach ($findings->groupBy('type') as $type => $group) {
-            $label = strtoupper(str_replace('_', ' ', $type));
-            $this->line("  <fg=yellow>▶ {$label}</>");
-
-            foreach ($group->take(5) as $finding) {
-                $icon = $finding->severity === 'critical' ? '<fg=red>●</>' : '<fg=yellow>●</>';
-                $this->line("    {$icon}  {$finding->message}");
-                if ($finding->request_path) {
-                    $this->line("       <fg=gray>Path: {$finding->request_path}</>");
-                }
-            }
-
-            if ($group->count() > 5) {
-                $this->line("       <fg=gray>... and " . ($group->count() - 5) . " more</>");
-            }
-            $this->newLine();
+        foreach ($findings->groupBy('type') as $groupType => $group) {
+            $this->printSection($groupType, $group);
         }
 
+        $this->line('─────────────────────────────────────────────────────');
         $this->table(
             ['Type', 'Warning', 'Critical', 'Total'],
             $findings->groupBy('type')->map(fn ($items, $t) => [
@@ -68,5 +55,39 @@ class DbReportCommand extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    private function printSection(string $type, $findings): void
+    {
+        $label = strtoupper(str_replace('_', ' ', $type));
+        $this->line("  <fg=yellow>▶ {$label}</>");
+
+        foreach ($findings->take(5) as $finding) {
+            $icon = $finding->severity === 'critical' ? '<fg=red>●</>' : '<fg=yellow>●</>';
+
+            $this->line("    {$icon}  {$finding->message}");
+
+            if ($finding->request_path) {
+                $this->line("       <fg=gray>Path: {$finding->request_path}</>");
+            }
+
+            // 💡 Fix suggestion
+            $suggestion = SuggestionGenerator::forFinding([
+                'type'    => $finding->type,
+                'context' => $finding->context ?? [],
+            ]);
+
+            foreach (explode("\n", $suggestion) as $line) {
+                $this->line("       <fg=cyan>💡 {$line}</>");
+            }
+
+            $this->newLine();
+        }
+
+        if ($findings->count() > 5) {
+            $this->line("       <fg=gray>... and " . ($findings->count() - 5) . " more</>");
+        }
+
+        $this->newLine();
     }
 }
