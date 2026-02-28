@@ -3,7 +3,7 @@
 Laravel DB Monitor is a real-time database performance monitoring package for Laravel applications.  
 It automatically detects **slow queries**, **N+1 query problems**, and **missing indexes**, then suggests SQL optimizations and can even generate index migrations for you.
 
-> A production-ready Laravel performance monitoring tool for Laravel 10, 11 & 12.
+>  A production-ready Laravel performance monitoring tool for Laravel 10, 11 & 12.
 
 ![Laravel](https://img.shields.io/badge/Laravel-10%20%7C%2011%20%7C%2012-red?style=flat-square&logo=laravel)
 ![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue?style=flat-square&logo=php)
