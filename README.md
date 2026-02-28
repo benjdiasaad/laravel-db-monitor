@@ -1,7 +1,9 @@
-# Laravel DB Monitor
+# Laravel DB Monitor — Real-Time Database Performance Monitoring, Slow Query Detection & N+1 Analysis
 
-**Real-time database health monitoring for Laravel.**
-Automatically detects slow queries, N+1 problems, and missing indexes — stores findings in your database, suggests fixes, and alerts you via email or Slack.
+Laravel DB Monitor is a real-time database performance monitoring package for Laravel applications.  
+It automatically detects **slow queries**, **N+1 query problems**, and **missing indexes**, then suggests SQL optimizations and can even generate index migrations for you.
+
+> A production-ready Laravel performance monitoring tool for Laravel 10, 11 & 12.
 
 ![Laravel](https://img.shields.io/badge/Laravel-10%20%7C%2011%20%7C%2012-red?style=flat-square&logo=laravel)
 ![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue?style=flat-square&logo=php)
@@ -9,17 +11,17 @@ Automatically detects slow queries, N+1 problems, and missing indexes — stores
 
 ---
 
-## ✨ What It Does
+## ✨ Features
 
-| Problem | How It Helps |
-|---|---|
-| 🐢 Slow queries | Flags any query exceeding your threshold (default: 500ms) |
-| 🔁 N+1 queries | Detects when the same query pattern runs 10+ times per request |
-| 📭 Missing indexes | Suggests which columns need indexes based on real query patterns |
-| 💡 Fix suggestions | Shows exactly how to fix every detected issue |
-| 🔧 Auto-fix | Generates migration files for missing indexes automatically |
-| 📬 Alerts | Sends email or Slack notifications for critical findings |
-| 📋 Reports | Clean CLI report via `php artisan db:report` |
+- 🐢 Detect slow database queries in real time
+- 🔁 Identify N+1 query problems automatically
+- 📭 Suggest missing indexes based on real usage
+- 💡 Show actionable fix suggestions
+- 🔧 Generate index migrations automatically
+- 📬 Send alerts via Email or Slack
+- 📋 Clean CLI reporting (`db:report`)
+- 🧹 Auto-prune old logs using Laravel’s Prunable trait
+- ⚡ Works with MySQL, PostgreSQL, SQLite
 
 ---
 
@@ -29,7 +31,7 @@ Automatically detects slow queries, N+1 problems, and missing indexes — stores
 composer require benjdiasaad/laravel-db-monitor
 ```
 
-Publish the config and migrations:
+Publish config & migrations:
 
 ```bash
 php artisan vendor:publish --tag=db-monitor-config
@@ -66,44 +68,38 @@ protected $middlewareGroups = [
 
 ## 🔧 Configuration
 
-Add these to your `.env` file:
+Add to `.env`:
 
 ```env
 DB_MONITOR_ENABLED=true
 DB_MONITOR_SLOW_THRESHOLD=500
 DB_MONITOR_N1_THRESHOLD=10
+DB_MONITOR_INDEX_THRESHOLD=50
 DB_MONITOR_NOTIFY=admin@yourapp.com
+DB_MONITOR_RETENTION=7
 ```
 
-Full config file at `config/db-monitor.php`:
+Config file: `config/db-monitor.php`
 
 ```php
 return [
-    // Enable or disable monitoring entirely
+
     'enabled' => env('DB_MONITOR_ENABLED', true),
 
-    // Queries slower than this (ms) are flagged
     'slow_query_threshold_ms' => env('DB_MONITOR_SLOW_THRESHOLD', 500),
 
-    // Flag as N+1 if same query pattern runs more than this per request
     'n_plus_one_threshold' => env('DB_MONITOR_N1_THRESHOLD', 10),
 
-    // Suggest index if column appears in WHERE clauses this many times
     'missing_index_min_occurrences' => env('DB_MONITOR_INDEX_THRESHOLD', 50),
 
-    // Save raw query logs to DB (set false to save disk space)
     'store_queries' => env('DB_MONITOR_STORE_QUERIES', true),
 
-    // Delete logs older than N days
     'retention_days' => env('DB_MONITOR_RETENTION', 7),
 
-    // Email address to receive critical alerts (null = disabled)
     'notify' => env('DB_MONITOR_NOTIFY', null),
 
-    // Notification channels: 'mail', 'slack'
     'notification_channels' => ['mail'],
 
-    // These routes will NOT be monitored
     'exclude_paths' => [
         'telescope/*',
         '_debugbar/*',
@@ -117,85 +113,76 @@ return [
 
 ## 🚀 Usage
 
-### View a health report with fix suggestions
+### Generate a Database Health Report
 
 ```bash
 php artisan db:report
 ```
 
+Example output:
+
 ```
-  DB Monitor Report — Last 24 hours
+DB Monitor Report — Last 24 hours
 
-  ▶ SLOW QUERY
-    ●  Slow query detected: 2300ms (threshold: 500ms)
-       Path: api/orders
-       💡 Use select() to avoid SELECT *: Order::select('id', 'total', ...)
-       💡 Add an index on the WHERE column:
-       💡 php artisan db:fix --table=orders --column=user_id
+▶ SLOW QUERY
+  Slow query detected: 2300ms
+  Path: api/orders
+  💡 Suggestion: Use select() instead of SELECT *
+  💡 Add index:
+  php artisan db:fix --table=orders --column=user_id
 
-  ▶ N+1 QUERY
-    ●  Potential N+1 detected: same query ran 47 times (total: 235ms)
-       Path: products/list
-       💡 Add eager loading → Model::with('user')->get()
+▶ N+1 QUERY
+  Same query executed 47 times
+  💡 Suggestion: Model::with('user')->get()
 
-  ▶ MISSING INDEX
-    ●  Possible missing index on `orders`.`user_id` — used in 230 queries
-       💡 Auto-generate the migration:
-       💡 php artisan db:fix --table=orders --column=user_id
-       💡 Then run: php artisan migrate
-
- Type           | Warning | Critical | Total
-----------------|---------|----------|------
- Slow Query     |    4    |    1     |   5
- N+1 Query      |    2    |    0     |   2
- Missing Index  |    2    |    0     |   2
+▶ MISSING INDEX
+  Column orders.user_id used in 230 queries
+  💡 Auto-generate migration:
+  php artisan db:fix --table=orders --column=user_id
 ```
 
-### Filter the report
+---
+
+### Filter Reports
 
 ```bash
-# Last 48 hours only
 php artisan db:report --hours=48
-
-# Only critical findings
 php artisan db:report --severity=critical
-
-# Only N+1 findings
 php artisan db:report --type=n_plus_one
 ```
 
-### Auto-fix missing indexes
+---
 
-Generate a migration for a specific missing index:
+### Auto-Fix Missing Indexes
+
+Generate migration:
 
 ```bash
 php artisan db:fix --table=orders --column=user_id
-# ✅ Migration created: 2026_02_27_000000_add_index_user_id_to_orders_table.php
-# Run: php artisan migrate
+php artisan migrate
 ```
 
-Fix all missing index findings at once:
+Fix all at once:
 
 ```bash
 php artisan db:fix --all
-# ✅ Migration created: ...add_index_user_id_to_orders_table.php
-# ✅ Migration created: ...add_index_category_id_to_products_table.php
-# Run: php artisan migrate
+php artisan migrate
 ```
 
-### Analyze stored logs
+---
+
+### Analyze Stored Logs
 
 ```bash
 php artisan db:analyze --hours=24
 ```
 
-### Clear old logs
+---
+
+### Clear Logs
 
 ```bash
-# Delete logs older than 7 days
 php artisan db:clear --days=7
-
-# Delete everything
 php artisan db:clear --all
 ```
 
@@ -203,19 +190,19 @@ php artisan db:clear --all
 
 ## 📬 Notifications
 
-Set `DB_MONITOR_NOTIFY` in your `.env` to receive **email alerts** whenever a critical issue is detected (a query 5x over your threshold, or N+1 with 30+ repetitions).
+Enable email alerts:
 
 ```env
 DB_MONITOR_NOTIFY=admin@yourapp.com
 ```
 
-For **Slack**, update `config/db-monitor.php`:
+Enable Slack notifications in `config/db-monitor.php`:
 
 ```php
 'notification_channels' => ['slack'],
 ```
 
-And configure your Slack webhook in `config/services.php`:
+Configure Slack in `config/services.php`:
 
 ```php
 'slack' => [
@@ -228,75 +215,71 @@ And configure your Slack webhook in `config/services.php`:
 
 ---
 
-## 🧰 Facade
-
-You can also use the package directly via the facade:
+## 🧰 Facade Usage
 
 ```php
 use BenjdiaSaad\DbMonitor\Facades\DbMonitor;
 
-// Manually run detectors on any set of queries
 $findings = DbMonitor::runDetectors($queries);
 
-// Analyze stored logs from the last 48 hours
-$findings = DbMonitor::analyzeStoredLogs(hours: 48);
+$analysis = DbMonitor::analyzeStoredLogs(hours: 48);
 ```
 
 ---
 
-## 🛠️ All Artisan Commands
+## 🛠 Artisan Commands
 
 | Command | Description |
-|---|---|
-| `php artisan db:report` | Show health report with fix suggestions |
-| `php artisan db:report --hours=48` | Report for the last 48 hours |
-| `php artisan db:report --severity=critical` | Only critical findings |
-| `php artisan db:report --type=n_plus_one` | Only N+1 findings |
-| `php artisan db:analyze` | Analyze stored logs and write new findings |
-| `php artisan db:fix --table=x --column=y` | Generate migration for a missing index |
-| `php artisan db:fix --all` | Generate migrations for all missing indexes |
-| `php artisan db:clear --days=7` | Delete logs older than 7 days |
-| `php artisan db:clear --all` | Delete all logs and findings |
+|---------|------------|
+| `db:report` | Show database health report |
+| `db:report --hours=48` | Report for last 48 hours |
+| `db:report --severity=critical` | Only critical issues |
+| `db:report --type=n_plus_one` | Only N+1 findings |
+| `db:analyze` | Analyze stored logs |
+| `db:fix --table=x --column=y` | Generate index migration |
+| `db:fix --all` | Fix all missing indexes |
+| `db:clear --days=7` | Clear old logs |
+| `db:clear --all` | Clear everything |
 
 ---
 
-## 🗄️ Database Tables
+## 🗄 Database Tables
 
-The package creates two tables:
+### `db_monitor_query_logs`
 
-**`db_monitor_query_logs`** — stores every recorded query per request.
+Stores every captured query per request.
 
-| Column | Type | Description |
-|---|---|---|
-| `sql` | text | The raw SQL |
-| `bindings` | json | Query bindings |
-| `duration_ms` | bigint | Execution time in ms |
-| `connection` | string | DB connection name |
-| `request_id` | string | UUID grouping all queries in one request |
-| `request_path` | string | The URL path |
+- sql
+- bindings
+- duration_ms
+- connection
+- request_id
+- request_path
 
-**`db_monitor_findings`** — stores detected issues.
+### `db_monitor_findings`
 
-| Column | Type | Description |
-|---|---|---|
-| `type` | string | `slow_query`, `n_plus_one`, `missing_index` |
-| `severity` | string | `warning` or `critical` |
-| `message` | text | Human-readable description |
-| `context` | json | Full details (sql, count, threshold, etc.) |
-| `request_path` | string | The URL where it was detected |
-| `notified` | boolean | Whether an alert was sent |
+Stores detected issues.
+
+- type (`slow_query`, `n_plus_one`, `missing_index`)
+- severity (`warning`, `critical`)
+- message
+- context (json)
+- request_path
+- notified
 
 ---
 
-## 🧹 Auto-pruning
+## 🧹 Auto-Pruning
 
-Both tables use Laravel's `Prunable` trait. Logs older than `retention_days` (default: 7) are automatically deleted when you run:
+Both tables use Laravel's `Prunable` trait.
+
+Run manually:
 
 ```bash
 php artisan model:prune
 ```
 
-Add this to your scheduler in `routes/console.php` to run it daily:
+Schedule daily:
 
 ```php
 Schedule::command('model:prune')->daily();
@@ -304,24 +287,39 @@ Schedule::command('model:prune')->daily();
 
 ---
 
-## Requirements
+## ✅ Requirements
 
-- PHP **8.2+**
-- Laravel **10, 11, or 12**
-- Any database supported by Laravel (MySQL, PostgreSQL, SQLite)
+- PHP 8.2+
+- Laravel 10, 11, or 12
+- Any Laravel-supported database
+
+---
+
+## 🎯 Why Use Laravel DB Monitor?
+
+Unlike traditional profilers, Laravel DB Monitor:
+
+- Stores historical query patterns
+- Detects recurring performance issues
+- Suggests fixes automatically
+- Can generate index migrations for you
+- Works in production environments
+
+It helps you catch database problems before your users experience slow pages.
 
 ---
 
 ## 📄 License
 
-MIT — free to use in personal and commercial projects.
+MIT — free for personal and commercial use.
 
 ---
 
 ## 👤 Author
 
-**Benjdia Saad** — [github.com/benjdiasaad](https://github.com/benjdiasaad)
+**Benjdia Saad**  
+GitHub: https://github.com/benjdiasaad
 
 ---
 
-> Built to help Laravel developers catch database problems before their users do.
+> Built to help Laravel developers optimize database performance before it becomes a problem.
