@@ -9,6 +9,10 @@ It automatically detects **slow queries**, **N+1 query problems**, and **missing
 ![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue?style=flat-square&logo=php)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
+<a href="https://packagist.org/packages/benjdiasaad/laravel-db-monitor">
+<img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads">
+</a>
+
 ---
 
 ## ✨ Features
