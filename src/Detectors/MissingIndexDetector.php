@@ -46,8 +46,12 @@ class MissingIndexDetector implements DetectorInterface
     {
         $pairs = [];
 
+        // Unqualified columns (e.g. Eloquent's `where "user_id" = ?`) belong to the FROM table
+        preg_match('/\bfrom\s+[`"]?(\w+)[`"]?/i', $sql, $from);
+        $fromTable = $from[1] ?? 'unknown';
+
         preg_match_all(
-            '/(?:`?(\w+)`?\.)?`?(\w+)`?\s*(?:=|LIKE|IN|>|<|>=|<=|<>|!=)/i',
+            '/(?:[`"]?(\w+)[`"]?\.)?[`"]?(\w+)[`"]?\s*(?:=|LIKE|IN|>|<|>=|<=|<>|!=)/i',
             $sql, $matches, PREG_SET_ORDER
         );
 
@@ -55,7 +59,7 @@ class MissingIndexDetector implements DetectorInterface
             $table = $match[1] ?? '';
             $column = $match[2] ?? '';
             if ($column && ! in_array(strtolower($column), ['id', '1', '0'])) {
-                $pairs[] = [$table ?: 'unknown', $column];
+                $pairs[] = [$table ?: $fromTable, $column];
             }
         }
 

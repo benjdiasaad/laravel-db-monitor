@@ -23,11 +23,18 @@ class MonitorQueries
 
         $this->recorder->startRequest();
 
-        $response = $next($request);
-        
+        return $next($request);
+    }
+
+    /**
+     * Analyse after the response has been sent, so monitoring adds
+     * no latency for the user.
+     */
+    public function terminate(Request $request, Response $response): void
+    {
         $this->monitor->processRequest();
 
-        return $response;
+        $this->recorder->stop();
     }
 
     private function isExcluded(Request $request): bool

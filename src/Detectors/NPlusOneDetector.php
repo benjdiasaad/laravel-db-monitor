@@ -35,6 +35,7 @@ class NPlusOneDetector implements DetectorInterface
                         'total_ms' => $totalMs,
                         'avg_ms' => round($totalMs / $count, 2),
                         'sample_sql' => $group[0]['sql'],
+                        'location' => $group[0]['location'] ?? null,
                     ],
                 ];
             }

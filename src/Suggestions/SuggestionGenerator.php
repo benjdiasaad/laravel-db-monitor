@@ -10,6 +10,8 @@ class SuggestionGenerator
             'slow_query' => self::forSlowQuery($finding['context']),
             'n_plus_one' => self::forNPlusOne($finding['context']),
             'missing_index' => self::forMissingIndex($finding['context']),
+            'duplicate_query' => self::forDuplicateQuery($finding['context']),
+            'too_many_queries' => self::forTooManyQueries($finding['context']),
             default => 'Review the query manually.',
         };
     }
@@ -54,6 +56,20 @@ class SuggestionGenerator
         return "Auto-generate the migration:\n" .
                "    php artisan db:fix --table={$table} --column={$column}\n" .
                "    Then run: php artisan migrate";
+    }
+
+    private static function forDuplicateQuery(array $context): string
+    {
+        return "The exact same query ran {$context['count']} times. Reuse the result:\n" .
+               "    Load it once and pass it around, or memoize it:\n" .
+               "    once(fn () => ...) or Cache::remember('key', 60, fn () => ...)";
+    }
+
+    private static function forTooManyQueries(array $context): string
+    {
+        return "This request ran {$context['count']} queries (limit: {$context['max_queries']}).\n" .
+               "    Eager load relations with ->with(), use withCount() for counts,\n" .
+               "    and turn on Model::preventLazyLoading() in development.";
     }
 
     private static function extractTable(string $sql): string

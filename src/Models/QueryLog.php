@@ -11,7 +11,7 @@ class QueryLog extends Model
 
     protected $table = 'db_monitor_query_logs';
 
-    protected $fillable = ['sql', 'bindings', 'duration_ms', 'connection', 'request_id', 'request_path', 'request_method'];
+    protected $fillable = ['sql', 'bindings', 'duration_ms', 'connection', 'request_id', 'request_path', 'request_method', 'location'];
 
     protected $casts    = ['bindings' => 'array'];
 

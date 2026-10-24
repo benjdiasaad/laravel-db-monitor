@@ -28,6 +28,7 @@ class DbIssueDetected extends Notification implements ShouldQueue
             ->greeting('Database Issue Detected')
             ->line($this->finding->message)
             ->line("**Path:** `{$this->finding->request_path}`")
+            ->when($this->finding->context['location'] ?? null, fn ($mail, $location) => $mail->line("**Source:** `{$location}`"))
             ->line("**Time:** {$this->finding->created_at->toDateTimeString()}")
             ->line('This alert was sent by laravel-db-monitor.');
     }
@@ -38,6 +39,8 @@ class DbIssueDetected extends Notification implements ShouldQueue
             'slow_query' => 'Slow Query',
             'n_plus_one' => 'N+1 Query',
             'missing_index' => 'Missing Index',
+            'duplicate_query' => 'Duplicate Query',
+            'too_many_queries' => 'Too Many Queries',
             default => $this->finding->type,
         };
     }
