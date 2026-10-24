@@ -25,6 +25,7 @@ class SlowQueryDetector implements DetectorInterface
                         'duration_ms' => $query['duration_ms'],
                         'threshold_ms' => $this->thresholdMs,
                         'connection' => $query['connection'],
+                        'location' => $query['location'] ?? null,
                     ],
                 ];
             }

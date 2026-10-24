@@ -1,15 +1,17 @@
 {
-   "name": "benjdiasaad/laravel-db-monitor",
-    "description": "Real-time database health monitoring for Laravel applications. Detects slow queries, N+1 issues, missing indexes, and suggests performance optimizations.",
+    "name": "benjdiasaad/laravel-db-monitor",
+    "description": "Real-time database health monitoring for Laravel applications. Detects slow queries, N+1 issues, duplicate queries, missing indexes, and suggests performance optimizations.",
     "keywords": [
         "laravel",
         "laravel-package",
+        "laravel-13",
         "database",
         "database-monitoring",
         "performance",
         "performance-optimization",
         "slow-queries",
         "n-plus-one",
+        "duplicate-queries",
         "query-analysis",
         "missing-index",
         "sql-optimization",
@@ -18,26 +20,36 @@
     ],
     "license": "MIT",
     "type": "library",
+    "authors": [
+        {
+            "name": "Benjdia Saad",
+            "homepage": "https://github.com/benjdiasaad"
+        }
+    ],
     "require": {
-        "php": "^8.2",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/database": "^10.0|^11.0|^12.0",
-        "illuminate/notifications": "^10.0|^11.0|^12.0"
+        "php": "^8.3",
+        "illuminate/support": "^12.0|^13.0",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/notifications": "^12.0|^13.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0|^9.0|^10.0",
-        "pestphp/pest": "^2.0|^3.0",
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0|^5.0",
         "laravel/pint": "^1.0"
     },
     "autoload": {
         "psr-4": {
-            "Benjdiasaad\\DbMonitor\\": "src/"
+            "BenjdiaSaad\\DbMonitor\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Benjdiasaad\\DbMonitor\\Tests\\": "tests/"
+            "BenjdiaSaad\\DbMonitor\\Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "format": "vendor/bin/pint"
     },
     "extra": {
         "laravel": {
@@ -50,6 +62,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {
+        "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }

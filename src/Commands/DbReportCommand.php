@@ -10,8 +10,10 @@ class DbReportCommand extends Command
 {
     protected $signature = 'db:report
                             {--hours=24 : How many hours back to report on}
-                            {--type= : Filter by type: slow_query, n_plus_one, missing_index}
-                            {--severity= : Filter by severity: warning, critical}';
+                            {--type= : Filter by type: slow_query, n_plus_one, duplicate_query, too_many_queries, missing_index}
+                            {--severity= : Filter by severity: warning, critical}
+                            {--json : Output findings as JSON}
+                            {--fail-on= : Exit with code 1 if any finding has this severity or higher (warning, critical) — handy in CI}';
 
     protected $description = 'Show a database health report from stored findings';
 
@@ -29,6 +31,23 @@ class DbReportCommand extends Command
         $findings = $query->orderBy('severity', 'desc')
                           ->orderBy('created_at', 'desc')
                           ->get();
+
+        $exitCode = $this->exitCodeFor($findings);
+
+        if ($this->option('json')) {
+            $this->line($findings->map(fn (DbFinding $f) => [
+                'id' => $f->id,
+                'type' => $f->type,
+                'severity' => $f->severity,
+                'message' => $f->message,
+                'request_path' => $f->request_path,
+                'context' => $f->context,
+                'suggestion' => SuggestionGenerator::forFinding(['type' => $f->type, 'context' => $f->context ?? []]),
+                'created_at' => $f->created_at?->toIso8601String(),
+            ])->toJson(JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+            return $exitCode;
+        }
 
         if ($findings->isEmpty()) {
             $this->info("No issues found in the last {$hours} hours.");
@@ -54,7 +73,23 @@ class DbReportCommand extends Command
             ])->values()
         );
 
-        return self::SUCCESS;
+        return $exitCode;
+    }
+
+    private function exitCodeFor($findings): int
+    {
+        $failOn = $this->option('fail-on');
+
+        if (! $failOn) {
+            return self::SUCCESS;
+        }
+
+        $levels = ['warning' => 1, 'critical' => 2];
+        $min = $levels[$failOn] ?? 2;
+
+        return $findings->contains(fn ($f) => ($levels[$f->severity] ?? 0) >= $min)
+            ? self::FAILURE
+            : self::SUCCESS;
     }
 
     private function printSection(string $type, $findings): void
@@ -69,6 +104,10 @@ class DbReportCommand extends Command
 
             if ($finding->request_path) {
                 $this->line("       <fg=gray>Path: {$finding->request_path}</>");
+            }
+
+            if ($location = $finding->context['location'] ?? null) {
+                $this->line("       <fg=gray>Source: {$location}</>");
             }
 
             // 💡 Fix suggestion

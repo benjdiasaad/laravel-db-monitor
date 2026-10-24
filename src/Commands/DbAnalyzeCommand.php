@@ -4,7 +4,6 @@ namespace BenjdiaSaad\DbMonitor\Commands;
 
 use Illuminate\Console\Command;
 use BenjdiaSaad\DbMonitor\DbMonitor;
-use BenjdiaSaad\DbMonitor\Models\DbFinding;
 
 class DbAnalyzeCommand extends Command
 {
@@ -30,12 +29,7 @@ class DbAnalyzeCommand extends Command
         $bar->start();
 
         foreach ($findings as $finding) {
-            DbFinding::create([
-                'type' => $finding['type'],
-                'severity' => $finding['severity'],
-                'message' => $finding['message'],
-                'context' => $finding['context'],
-            ]);
+            $this->monitor->recordFinding($finding);
             $bar->advance();
         }
 
